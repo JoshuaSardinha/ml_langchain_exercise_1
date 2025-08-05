@@ -6,8 +6,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_BACK: ${{ env.REGISTRY }}/${{ github.repository_owner }}/dd-backend
-  IMAGE_FRONT: ${{ env.REGISTRY }}/${{ github.repository_owner }}/dd-frontend
+  IMAGE_BACK: ghcr.io//${{ github.repository_owner }}/dd-backend
+  IMAGE_FRONT: ghcr.io//${{ github.repository_owner }}/dd-frontend
   SHA: ${{ github.sha }}
 
 jobs:
