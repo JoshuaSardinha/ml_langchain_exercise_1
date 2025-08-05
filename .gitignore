@@ -40,3 +40,5 @@ Thumbs.db
 .nx/workspace-data
 .github/instructions/nx.instructions.md
 
+vite.config.*.timestamp*
+vitest.config.*.timestamp*

@@ -1,0 +1,19 @@
+{
+  "name": "langchain-core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/langchain-core/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/langchain-core",
+        "main": "libs/langchain-core/src/index.ts",
+        "tsConfig": "libs/langchain-core/tsconfig.lib.json",
+        "assets": ["libs/langchain-core/*.md"]
+      }
+    }
+  }
+}
