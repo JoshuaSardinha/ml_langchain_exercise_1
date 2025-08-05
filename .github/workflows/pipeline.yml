@@ -6,6 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  REPO_OWNER: ${{ github.repository_owner }}
   IMAGE_BACK: ghcr.io/${{ github.repository_owner }}/dd-backend
   IMAGE_FRONT: ghcr.io/${{ github.repository_owner }}/dd-frontend
   SHA: ${{ github.sha }}
@@ -15,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set lowercase variables
+        run: |
+          echo "REPO_OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "IMAGE_BACK=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-backend" >> $GITHUB_ENV
+          echo "IMAGE_FRONT=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-frontend" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v3
         with: { version: 10 }
@@ -60,7 +67,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_PAT }}
-            docker pull $IMAGE_BACK:latest
+            docker pull ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-backend:latest
             docker compose -f /opt/datadoctor/docker-compose.yml up -d --no-deps --pull=always
 
   deploy-frontend:
@@ -76,5 +83,5 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_PAT }}
-            docker pull $IMAGE_FRONT:latest
+            docker pull ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-frontend:latest
             docker compose -f /opt/datadoctor/docker-compose.yml up -d --no-deps --pull=always
