@@ -39,6 +39,13 @@
       "options": {
         "passWithNoTests": true
       }
+    },
+    "docker": {
+      "executor": "@nx/docker:build",
+      "options": {
+        "dockerfile": "apps/backend/Dockerfile",
+        "tag": "ghcr.io/JoshuaSardinha/dd-backend"
+      }
     }
   }
 }

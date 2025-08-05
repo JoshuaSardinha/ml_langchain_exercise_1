@@ -1,0 +1,74 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACK: ${{ env.REGISTRY }}/${{ github.repository_owner }}/dd-backend
+  IMAGE_FRONT: ${{ env.REGISTRY }}/${{ github.repository_owner }}/dd-frontend
+  SHA: ${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with: { version: 10 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm nx affected -t lint,test,build --base=origin/main
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_PAT }}" | \
+          docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Build backend image
+        run: |
+          docker build -f apps/backend/Dockerfile \
+            -t $IMAGE_BACK:$SHA -t $IMAGE_BACK:latest .
+          docker push $IMAGE_BACK --all-tags
+
+      - name: Build frontend image
+        run: |
+          docker build -f apps/frontend/Dockerfile \
+            -t $IMAGE_FRONT:$SHA -t $IMAGE_FRONT:latest .
+          docker push $IMAGE_FRONT --all-tags
+
+  deploy-backend:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy backend via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST_BACKEND }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_PAT }}
+            docker pull $IMAGE_BACK:latest
+            docker compose -f /opt/datadoctor/docker-compose.yml up -d --no-deps --pull=always
+
+  deploy-frontend:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy frontend via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST_FRONTEND }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_PAT }}
+            docker pull $IMAGE_FRONT:latest
+            docker compose -f /opt/datadoctor/docker-compose.yml up -d --no-deps --pull=always
