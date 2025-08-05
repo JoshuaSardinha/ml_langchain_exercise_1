@@ -10,7 +10,7 @@
       "executor": "@nx/docker:build",
       "options": {
         "dockerfile": "apps/backend/Dockerfile",
-        "tag": "ghcr.io/JoshuaSardinha/dd-backend"
+        "tag": "ghcr.io/joshuasardinha/dd-backend"
       }
     }
   }
