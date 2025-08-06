@@ -1,0 +1,30 @@
+{
+  "name": "ml-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "services/ml-service",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd services/ml-service && python -m app.main",
+        "readyWhen": "Uvicorn running on"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd services/ml-service && python -m pytest",
+        "passWithNoTests": true
+      }
+    },
+    "docker": {
+      "executor": "@nx/docker:build",
+      "options": {
+        "dockerfile": "services/ml-service/Dockerfile",
+        "tag": "ghcr.io/joshuasardinha/dd-ml-service"
+      }
+    }
+  }
+}
