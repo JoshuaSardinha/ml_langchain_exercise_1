@@ -38,12 +38,16 @@ class MissingValueHandler(BaseEstimator, TransformerMixin):
 class FeatureEngineer(BaseEstimator, TransformerMixin):
     """Create engineered features based on domain knowledge"""
     
+    def __init__(self, enhanced_features=True):
+        self.enhanced_features = enhanced_features
+    
     def fit(self, X, y=None):
         return self
     
     def transform(self, X):
         X_copy = X.copy()
         
+        # Basic features
         X_copy['age_group'] = pd.cut(X_copy['age'], 
                                      bins=[0, 30, 45, 60, 75, 100],
                                      labels=['<30', '30-45', '45-60', '60-75', '75+'])
@@ -65,6 +69,25 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         
         X_copy['exercise_missing'] = X_copy['exercise_frequency'].isna().astype(int)
         X_copy['education_missing'] = X_copy['education_level'].isna().astype(int)
+        
+        if self.enhanced_features:
+            X_copy['age_squared'] = X_copy['age'] ** 2
+            X_copy['bmi_squared'] = X_copy['bmi'] ** 2
+            X_copy['albumin_squared'] = X_copy['albumin_globulin_ratio'] ** 2
+            
+            X_copy['metabolic_risk'] = (
+                (X_copy['bmi'] > 30).astype(int) + 
+                (X_copy['last_lab_glucose'] > 110).astype(int) +
+                (X_copy['albumin_globulin_ratio'] < 0.5).astype(int)
+            )
+            
+            X_copy['hospitalization_risk'] = (
+                X_copy['days_hospitalized'] * X_copy['readmitted'] +
+                X_copy['medication_count'] / 10
+            )
+            
+            X_copy['smoker_high_bmi'] = ((X_copy['smoker'] == 'Yes') & (X_copy['bmi'] > 30)).astype(int)
+            X_copy['elderly_smoker'] = ((X_copy['age'] > 65) & (X_copy['smoker'] == 'Yes')).astype(int)
         
         return X_copy
 
@@ -127,9 +150,9 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
 class DataPreprocessor:
     """Main preprocessing pipeline for patient data"""
     
-    def __init__(self):
+    def __init__(self, enhanced_features=False):
         self.missing_handler = MissingValueHandler()
-        self.feature_engineer = FeatureEngineer()
+        self.feature_engineer = FeatureEngineer(enhanced_features=enhanced_features)
         self.categorical_encoder = CategoricalEncoder()
         self.scaler = StandardScaler()
         self.label_encoder_copd = LabelEncoder()

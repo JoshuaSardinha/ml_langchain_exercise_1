@@ -7,7 +7,8 @@ import logging
 from datetime import datetime
 
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor, VotingClassifier, VotingRegressor
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     accuracy_score, classification_report, confusion_matrix,
     mean_absolute_error, mean_squared_error, r2_score,
@@ -15,12 +16,13 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import LabelEncoder
 
+from xgboost import XGBClassifier, XGBRegressor
+
 from ..models.ml_models import COPDClassifier, ALTRegressor
 from ..utils.preprocessing import DataPreprocessor, extract_feature_importance
 from .data_service import DataService
 
 logger = logging.getLogger(__name__)
-
 
 class MLService:
     """Service for training and managing ML models"""
@@ -58,13 +60,15 @@ class MLService:
         if use_grid_search:
             param_grid = {
                 'n_estimators': [100, 200, 300],
-                'max_depth': [10, 20, None],
-                'min_samples_split': [2, 5],
-                'min_samples_leaf': [1, 2],
-                'max_features': ['sqrt', 'log2']
+                'max_depth': [3, 5, 7],
+                'learning_rate': [0.01, 0.1, 0.3],
+                'subsample': [0.7, 0.8, 0.9]
             }
-            
-            base_model = RandomForestClassifier(random_state=random_state, n_jobs=-1)
+            base_model = XGBClassifier(
+                random_state=random_state, 
+                use_label_encoder=False,
+                eval_metric='mlogloss'
+            )
             
             cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
             
@@ -74,20 +78,22 @@ class MLService:
                 n_jobs=-1, verbose=1
             )
             
-            logger.info("Performing grid search for COPD classifier...")
+            logger.info(f"Performing grid search for COPD classifier (XGBoost)...")
             grid_search.fit(X_train, y_train)
             
             self.copd_model = grid_search.best_estimator_
             best_params = grid_search.best_params_
             logger.info(f"Best parameters: {best_params}")
         else:
-            self.copd_model = RandomForestClassifier(
+            self.copd_model = XGBClassifier(
                 n_estimators=200,
-                max_depth=20,
-                min_samples_split=5,
-                min_samples_leaf=2,
+                max_depth=5,
+                learning_rate=0.1,
+                subsample=0.8,
+                colsample_bytree=0.8,
                 random_state=random_state,
-                n_jobs=-1
+                use_label_encoder=False,
+                eval_metric='mlogloss'
             )
             self.copd_model.fit(X_train, y_train)
             best_params = {}
@@ -160,13 +166,11 @@ class MLService:
         if use_grid_search:
             param_grid = {
                 'n_estimators': [100, 200, 300],
-                'max_depth': [10, 20, None],
-                'min_samples_split': [2, 5, 10],
-                'min_samples_leaf': [1, 2, 4],
-                'max_features': ['sqrt', 'log2']
+                'max_depth': [3, 5, 7],
+                'learning_rate': [0.01, 0.1, 0.3],
+                'subsample': [0.7, 0.8, 0.9]
             }
-            
-            base_model = RandomForestRegressor(random_state=random_state, n_jobs=-1)
+            base_model = XGBRegressor(random_state=random_state)
             
             grid_search = GridSearchCV(
                 base_model, param_grid, 
@@ -174,20 +178,20 @@ class MLService:
                 n_jobs=-1, verbose=1
             )
             
-            logger.info("Performing grid search for ALT regressor...")
+            logger.info(f"Performing grid search for ALT regressor (XGBoost)...")
             grid_search.fit(X_train, y_train)
             
             self.alt_model = grid_search.best_estimator_
             best_params = grid_search.best_params_
             logger.info(f"Best parameters: {best_params}")
         else:
-            self.alt_model = RandomForestRegressor(
+            self.alt_model = XGBRegressor(
                 n_estimators=200,
-                max_depth=20,
-                min_samples_split=5,
-                min_samples_leaf=2,
-                random_state=random_state,
-                n_jobs=-1
+                max_depth=5,
+                learning_rate=0.1,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                random_state=random_state
             )
             self.alt_model.fit(X_train, y_train)
             best_params = {}

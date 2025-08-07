@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Train ML models for the Data Doctor application
+Train ML models for the Data Doctor application with XGBoost support
 """
 
 import sys
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def train_models():
-    """Train both COPD and ALT models"""
+    """Train both COPD and ALT models using XGBoost"""
     
     logger.info("="*60)
     logger.info("Starting model training pipeline")
@@ -62,7 +62,7 @@ def train_models():
     alt_metrics = ml_service.train_alt_regressor(
         test_size=0.2,
         random_state=42,
-        use_grid_search=False  # Set to True for better performance (slower)
+        use_grid_search=True
     )
     
     logger.info("\nALT Regressor Results:")
@@ -155,5 +155,4 @@ def test_predictions(ml_service):
 
 if __name__ == "__main__":
     ml_service = train_models()
-    
     test_predictions(ml_service)
