@@ -3,7 +3,6 @@ import joblib
 import numpy as np
 from pathlib import Path
 
-
 class MLModelBase:
     """Base class for ML models"""
     
@@ -33,7 +32,6 @@ class MLModelBase:
             raise ValueError("Model not loaded")
         return self.model.predict(features)
 
-
 class COPDClassifier(MLModelBase):
     """COPD Classification Model"""
     
@@ -61,7 +59,6 @@ class COPDClassifier(MLModelBase):
             }
         except Exception as e:
             return {"prediction": None, "confidence": 0.0, "error": str(e)}
-
 
 class ALTRegressor(MLModelBase):
     """ALT Value Regression Model"""
