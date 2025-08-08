@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class MLService:
     """Service for training and managing ML models"""
     
-    def __init__(self, data_service: Optional[DataService] = None):
+    def __init__(self, data_service: Optional[DataService] = None, auto_load_models: bool = True):
         self.data_service = data_service or DataService()
         self.copd_model = None
         self.alt_model = None
@@ -35,6 +35,14 @@ class MLService:
         self.copd_label_encoder = LabelEncoder()
         self.model_metrics = {}
         self.feature_importance = {}
+        
+        # Auto-load models if available
+        if auto_load_models:
+            try:
+                self.load_models()
+                logger.info("Models auto-loaded successfully on MLService initialization")
+            except Exception as e:
+                logger.warning(f"Could not auto-load models: {e}. Models can be trained or loaded manually.")
         
     def train_copd_classifier(self, 
                             test_size: float = 0.2,
@@ -385,6 +393,25 @@ class MLService:
         except Exception as e:
             logger.error(f"Error loading models: {e}")
             return False
+    
+    def are_models_loaded(self) -> Dict[str, bool]:
+        """Check which models are loaded"""
+        return {
+            "copd_model": self.copd_model is not None,
+            "alt_model": self.alt_model is not None,
+            "preprocessor": self.preprocessor is not None,
+            "any_model_loaded": self.copd_model is not None or self.alt_model is not None
+        }
+    
+    def get_model_status(self) -> Dict[str, Any]:
+        """Get detailed model loading status"""
+        status = self.are_models_loaded()
+        status.update({
+            "model_metrics": list(self.model_metrics.keys()),
+            "feature_importance": list(self.feature_importance.keys()),
+            "copd_classes": ['A', 'B', 'C', 'D'] if self.copd_model else None
+        })
+        return status
     
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about loaded models"""
