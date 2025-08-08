@@ -34,6 +34,12 @@ class DataService:
             logger.error(f"Error loading data: {e}")
             return False
     
+    def get_dataframe(self) -> pd.DataFrame:
+        """Get the loaded dataframe"""
+        if self.df is None:
+            self._load_data()
+        return self.df if self.df is not None else pd.DataFrame()
+    
     def get_data_summary(self) -> Dict[str, Any]:
         """Get summary statistics of the dataset"""
         if self.df is None:

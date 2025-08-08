@@ -76,22 +76,7 @@ class DataQueryResponse(BaseModel):
     summary: str = Field(..., description="Human-readable summary")
     count: Optional[int] = Field(None, description="Number of records returned")
 
-class DocumentSearchRequest(BaseModel):
-    query: str = Field(..., description="Search query for medical documents")
-    top_k: int = Field(5, ge=1, le=20, description="Number of results to return")
-    similarity_threshold: float = Field(0.7, ge=0, le=1, description="Minimum similarity score")
-
-class DocumentResult(BaseModel):
-    document_id: str = Field(..., description="Document identifier")
-    title: str = Field(..., description="Document title")
-    content: str = Field(..., description="Relevant content excerpt")
-    similarity_score: float = Field(..., description="Similarity score")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional document metadata")
-
-class DocumentSearchResponse(BaseModel):
-    results: List[DocumentResult] = Field(..., description="Search results")
-    total_found: int = Field(..., description="Total number of documents found")
-    query: str = Field(..., description="Original search query")
+# Legacy document schemas removed - using LangChain responses directly
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant", "system"] = Field(..., description="Message role")

@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any
 import joblib
 import numpy as np
+import logging
 from pathlib import Path
 
 class MLModelBase:
@@ -23,7 +24,7 @@ class MLModelBase:
                 self.is_loaded = True
                 return True
         except Exception as e:
-            print(f"Error loading model: {e}")
+            logging.getLogger(__name__).error(f"Error loading model: {e}")
         return False
     
     def predict(self, features: np.ndarray) -> Any:
