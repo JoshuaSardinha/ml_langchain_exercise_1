@@ -78,20 +78,38 @@ class DataQueryResponse(BaseModel):
 
 class DocumentSearchRequest(BaseModel):
     query: str = Field(..., description="Search query for medical documents")
-    top_k: int = Field(5, ge=1, le=20, description="Number of results to return")
-    similarity_threshold: float = Field(0.7, ge=0, le=1, description="Minimum similarity score")
+    n_results: int = Field(5, ge=1, le=20, description="Number of results to return")
+    document_type: Optional[str] = Field(None, description="Filter by document type")
+    patient_id: Optional[str] = Field(None, description="Filter by patient ID")
 
 class DocumentResult(BaseModel):
-    document_id: str = Field(..., description="Document identifier")
-    title: str = Field(..., description="Document title")
-    content: str = Field(..., description="Relevant content excerpt")
-    similarity_score: float = Field(..., description="Similarity score")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional document metadata")
+    chunk_id: str = Field(..., description="Unique chunk identifier")
+    text: str = Field(..., description="Relevant content excerpt")
+    similarity_score: float = Field(..., description="Similarity score (0-1)")
+    metadata: Dict[str, Any] = Field(..., description="Document metadata")
+    citation: str = Field(..., description="Formatted citation information")
 
 class DocumentSearchResponse(BaseModel):
-    results: List[DocumentResult] = Field(..., description="Search results")
-    total_found: int = Field(..., description="Total number of documents found")
     query: str = Field(..., description="Original search query")
+    results: List[DocumentResult] = Field(..., description="Search results")
+    total_results: int = Field(..., description="Number of results returned")
+
+class DocumentProcessingRequest(BaseModel):
+    force_reprocess: bool = Field(False, description="Force reprocessing of all documents")
+
+class DocumentProcessingResponse(BaseModel):
+    status: str = Field(..., description="Processing status")
+    documents_processed: Optional[int] = Field(None, description="Number of documents processed")
+    errors: Optional[int] = Field(None, description="Number of processing errors")
+    total_chunks: int = Field(..., description="Total chunks created")
+    collection_size: int = Field(..., description="Vector database collection size")
+
+class DocumentStatsResponse(BaseModel):
+    total_chunks: int = Field(..., description="Total chunks in database")
+    unique_documents: int = Field(..., description="Number of unique documents")
+    document_types: Dict[str, int] = Field(..., description="Count by document type")
+    top_clinicians: Dict[str, int] = Field(..., description="Top clinicians by document count")
+    collection_name: str = Field(..., description="ChromaDB collection name")
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
