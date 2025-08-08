@@ -9,6 +9,7 @@ from app.services.langchain_service import LangChainDocumentService
 from app.services.data_service import DataService
 from app.services.ml_service import MLService
 from app.agents.medical_agent import MedicalAgent
+from app.config import settings
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -70,10 +71,14 @@ class ChatService:
             return None
     
     def _init_document_service(self):
-        """Initialize document service with LangChain"""
+        """Initialize document service with LangChain using configured paths"""
         try:
-            service = LangChainDocumentService()
-            logger.info("LangChain document service initialized")
+            service = LangChainDocumentService(
+                docs_path=settings.DOCS_DIR,
+                vectordb_path=settings.VECTORDB_DIR,
+                embedding_model=settings.EMBEDDING_MODEL
+            )
+            logger.info(f"LangChain document service initialized with configured paths: docs={settings.DOCS_DIR}, vectordb={settings.VECTORDB_DIR}")
             return service
         except Exception as e:
             logger.warning(f"Document service initialization failed: {e}")

@@ -15,8 +15,8 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.chains import RetrievalQA, ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import PromptTemplate
+from langchain_community.vectorstores.utils import filter_complex_metadata
 
-# LLM imports - we'll try multiple providers
 try:
     from langchain_openai import ChatOpenAI
     OPENAI_AVAILABLE = True
@@ -53,13 +53,11 @@ class LangChainDocumentService:
         self.vectordb_path = Path(vectordb_path)
         self.collection_name = collection_name
         
-        # Use environment variable or default
         self.embedding_model_name = embedding_model or os.getenv(
             "EMBEDDING_MODEL", 
             "sentence-transformers/all-MiniLM-L6-v2"
         )
         
-        # Initialize components
         self.embeddings = None
         self.vector_store = None
         self.text_splitter = None
@@ -73,7 +71,6 @@ class LangChainDocumentService:
     def _initialize_components(self):
         """Initialize all LangChain components"""
         try:
-            # Initialize embeddings
             logger.info(f"Initializing embeddings with {self.embedding_model_name}")
             self.embeddings = HuggingFaceEmbeddings(
                 model_name=self.embedding_model_name,
@@ -81,7 +78,6 @@ class LangChainDocumentService:
                 encode_kwargs={'normalize_embeddings': True}
             )
             
-            # Initialize text splitter
             self.text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=int(os.getenv("CHUNK_SIZE", 500)),
                 chunk_overlap=int(os.getenv("CHUNK_OVERLAP", 50)),
@@ -89,13 +85,10 @@ class LangChainDocumentService:
                 separators=["\n\n", "\n", ".", "!", "?", ",", " ", ""]
             )
             
-            # Initialize LLM
             self._initialize_llm()
             
-            # Initialize memory
             self._initialize_memory()
             
-            # Initialize vector store
             self._initialize_vector_store()
             
             logger.info("LangChain components initialized successfully")
@@ -157,7 +150,6 @@ class LangChainDocumentService:
         """Initialize or load the vector store"""
         self.vectordb_path.mkdir(parents=True, exist_ok=True)
         
-        # Check if vector store already exists
         chroma_path = self.vectordb_path / self.collection_name
         
         if chroma_path.exists() and any(chroma_path.iterdir()):
@@ -178,7 +170,6 @@ class LangChainDocumentService:
     def process_documents(self, force_reprocess: bool = False) -> Dict[str, Any]:
         """Process documents using LangChain document loaders and splitters"""
         
-        # Check if already processed
         if self.vector_store and self.vector_store._collection.count() > 0 and not force_reprocess:
             logger.info("Documents already processed. Use force_reprocess=True to reprocess.")
             return {
@@ -188,7 +179,6 @@ class LangChainDocumentService:
         
         logger.info("Starting document processing with LangChain...")
         
-        # Use DirectoryLoader to load all markdown files
         loader = DirectoryLoader(
             str(self.docs_path),
             glob="**/*.md",
@@ -197,34 +187,39 @@ class LangChainDocumentService:
         )
         
         try:
-            # Load all documents
             documents = loader.load()
             logger.info(f"Loaded {len(documents)} documents")
             
-            # Enrich metadata
             for doc in documents:
                 self._enrich_document_metadata(doc)
             
-            # Split documents into chunks
             split_documents = self.text_splitter.split_documents(documents)
             logger.info(f"Created {len(split_documents)} chunks")
             
-            # Add to vector store
+            split_documents = filter_complex_metadata(split_documents)
+            logger.info(f"Filtered metadata for ChromaDB compatibility")
+            
             if force_reprocess and self.vector_store:
-                # Clear existing data
                 self.vector_store._collection.delete(where={})
             
-            # Add documents in batches
             batch_size = 100
             for i in range(0, len(split_documents), batch_size):
                 batch = split_documents[i:i+batch_size]
-                self.vector_store.add_documents(batch)
-                logger.info(f"Added batch {i//batch_size + 1}/{(len(split_documents) + batch_size - 1)//batch_size}")
+                try:
+                    self.vector_store.add_documents(batch)
+                    logger.info(f"Added batch {i//batch_size + 1}/{(len(split_documents) + batch_size - 1)//batch_size}")
+                except Exception as batch_error:
+                    logger.error(f"Error adding batch {i//batch_size + 1}: {batch_error}")
+                    for j, doc in enumerate(batch):
+                        try:
+                            self.vector_store.add_documents([doc])
+                        except Exception as doc_error:
+                            logger.error(f"Error adding document {i+j}: {doc_error}")
+                            logger.error(f"Problematic metadata: {doc.metadata}")
+                            continue
             
-            # Persist the vector store
             self.vector_store.persist()
             
-            # Initialize retrieval chains after processing
             self._initialize_retrieval_chains()
             
             return {
@@ -243,8 +238,7 @@ class LangChainDocumentService:
         content = doc.page_content
         filename = Path(doc.metadata.get("source", "")).name
         
-        # Extract and add metadata
-        doc.metadata.update({
+        raw_metadata = {
             "document_id": filename.replace('.md', ''),
             "filename": filename,
             "document_type": self._infer_document_type(content),
@@ -252,7 +246,29 @@ class LangChainDocumentService:
             "date_created": self._extract_date(content),
             "medications": self._extract_medications(content),
             "diagnosis_codes": self._extract_diagnosis_codes(content)
-        })
+        }
+        
+        sanitized_metadata = self._sanitize_metadata(raw_metadata)
+        doc.metadata.update(sanitized_metadata)
+    
+    def _sanitize_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize metadata to ensure compatibility with ChromaDB"""
+        sanitized = {}
+        
+        for key, value in metadata.items():
+            if value is None:
+                sanitized[key] = ""
+            elif isinstance(value, list):
+                if value:
+                    sanitized[key] = ", ".join(str(item) for item in value if item is not None)
+                else:
+                    sanitized[key] = ""
+            elif isinstance(value, (str, int, float, bool)):
+                sanitized[key] = value
+            else:
+                sanitized[key] = str(value) if value is not None else ""
+        
+        return sanitized
     
     def _infer_document_type(self, content: str) -> str:
         """Infer document type from content"""
@@ -344,20 +360,17 @@ class LangChainDocumentService:
             logger.warning("Vector store not initialized. Cannot create retrieval chains.")
             return
         
-        # Create base retriever
         base_retriever = self.vector_store.as_retriever(
             search_type="similarity",
             search_kwargs={"k": 5}
         )
         
-        # Create multi-query retriever for better coverage
         if self.llm:
             self.multi_query_retriever = MultiQueryRetriever.from_llm(
                 retriever=base_retriever,
                 llm=self.llm
             )
             
-            # Create QA chain for direct question answering
             qa_prompt = PromptTemplate(
                 template="""You are a medical assistant analyzing clinical documents. 
                 Use the following pieces of context to answer the question at the end.
@@ -380,7 +393,6 @@ class LangChainDocumentService:
                 chain_type_kwargs={"prompt": qa_prompt}
             )
             
-            # Create conversational chain for multi-turn conversations
             if self.memory:
                 self.conversational_chain = ConversationalRetrievalChain.from_llm(
                     llm=self.llm,
@@ -405,7 +417,6 @@ class LangChainDocumentService:
         
         try:
             if use_llm and self.qa_chain:
-                # Use QA chain for intelligent answering
                 result = self.qa_chain({"query": query})
                 
                 response = {
@@ -417,14 +428,13 @@ class LangChainDocumentService:
                 if include_sources and "source_documents" in result:
                     for doc in result["source_documents"]:
                         response["sources"].append({
-                            "content": doc.page_content[:500],  # Truncate for display
+                            "content": doc.page_content[:500],
                             "metadata": doc.metadata,
                             "citation": self._format_citation(doc.metadata)
                         })
                 
                 return response
             else:
-                # Fallback to similarity search
                 docs = self.vector_store.similarity_search(query, k=n_results)
                 
                 results = []
@@ -452,7 +462,6 @@ class LangChainDocumentService:
             return {"error": "Conversational chain not initialized. Please ensure LLM is configured."}
         
         try:
-            # Get response from conversational chain
             result = self.conversational_chain({"question": message})
             
             response = {
@@ -462,7 +471,6 @@ class LangChainDocumentService:
                 "sources": []
             }
             
-            # Add source documents if available
             if "source_documents" in result:
                 for doc in result["source_documents"]:
                     response["sources"].append({
@@ -513,24 +521,20 @@ class LangChainDocumentService:
         if not self.vector_store:
             raise ValueError("Vector store not initialized")
         
-        # Get all documents for BM25
         all_docs = self.vector_store.get()
         documents = [
             Document(page_content=doc, metadata=meta) 
             for doc, meta in zip(all_docs['documents'], all_docs['metadatas'])
         ]
         
-        # Create BM25 retriever for keyword search
         bm25_retriever = BM25Retriever.from_documents(documents)
         bm25_retriever.k = 5
         
-        # Create semantic retriever
         semantic_retriever = self.vector_store.as_retriever(
             search_type="similarity",
             search_kwargs={"k": 5}
         )
         
-        # Combine them with equal weights
         ensemble_retriever = EnsembleRetriever(
             retrievers=[bm25_retriever, semantic_retriever],
             weights=[0.5, 0.5]
@@ -546,7 +550,6 @@ class LangChainDocumentService:
         try:
             collection_count = self.vector_store._collection.count()
             
-            # Get sample of documents to analyze
             sample = self.vector_store.get(limit=100)
             
             doc_types = {}
@@ -554,11 +557,9 @@ class LangChainDocumentService:
             unique_documents = set()
             
             for metadata in sample.get('metadatas', []):
-                # Count document types
                 doc_type = metadata.get('document_type', 'unknown')
                 doc_types[doc_type] = doc_types.get(doc_type, 0) + 1
                 
-                # Track unique patients and documents
                 if metadata.get('patient_id'):
                     unique_patients.add(metadata['patient_id'])
                 if metadata.get('document_id'):
