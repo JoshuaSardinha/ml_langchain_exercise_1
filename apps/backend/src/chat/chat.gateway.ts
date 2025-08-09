@@ -201,7 +201,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         this.server.to(clientInfo.roomId).emit(WEBSOCKET_EVENTS.RESPONSE, response);
       }
       
-      return response;
+      return { success: true };
     } catch (error) {
       this.logger.error(`Error handling message: ${error.message}`, error.stack);
       
@@ -211,6 +211,8 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         message: ERROR_MESSAGES.ML_SERVICE_UNAVAILABLE,
         error: error.message,
       });
+      
+      return { success: false, error: error.message };
     }
   }
 
@@ -355,19 +357,27 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   private setupHeartbeat() {
     setInterval(() => {
-      const now = Date.now();
-      
-      this.connectedClients.forEach((clientInfo, clientId) => {
-        const timeSinceLastActivity = now - clientInfo.lastActivity.getTime();
+      try {
+        const now = Date.now();
         
-        if (timeSinceLastActivity > CHAT_CONSTANTS.WEBSOCKET.HEARTBEAT_TIMEOUT_MS) {
-          const client = this.server.sockets.sockets.get(clientId);
-          if (client) {
-            this.logger.warn(`Disconnecting inactive client: ${clientId}`);
-            client.disconnect();
+        this.connectedClients.forEach((clientInfo, clientId) => {
+          const timeSinceLastActivity = now - clientInfo.lastActivity.getTime();
+          
+          if (timeSinceLastActivity > CHAT_CONSTANTS.WEBSOCKET.HEARTBEAT_TIMEOUT_MS) {
+            // Use Socket.IO's sockets.get() method for v4+
+            const client = this.server?.sockets?.sockets?.get(clientId);
+            if (client && client.connected) {
+              this.logger.warn(`Disconnecting inactive client: ${clientId}`);
+              client.disconnect(true);
+            } else {
+              // Clean up disconnected client from our tracking
+              this.connectedClients.delete(clientId);
+            }
           }
-        }
-      });
+        });
+      } catch (error) {
+        this.logger.error(`Error in heartbeat cleanup: ${error.message}`, error.stack);
+      }
     }, CHAT_CONSTANTS.WEBSOCKET.HEARTBEAT_INTERVAL_MS);
   }
 }

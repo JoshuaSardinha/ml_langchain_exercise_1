@@ -19,7 +19,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     this.logger.log(`Incoming request: ${method} ${url}`);
     
-    if (Object.keys(body).length > 0) {
+    if (body && Object.keys(body).length > 0) {
       this.logger.debug(`Request body: ${JSON.stringify(body)}`);
     }
 
@@ -33,7 +33,7 @@ export class LoggingInterceptor implements NestInterceptor {
               `Outgoing response: ${method} ${url} - ${responseTime}ms`,
             );
             
-            if (data && typeof data === 'object' && Object.keys(data).length < 10) {
+            if (data && typeof data === 'object' && data !== null && Object.keys(data).length < 10) {
               this.logger.debug(`Response data: ${JSON.stringify(data)}`);
             }
           },

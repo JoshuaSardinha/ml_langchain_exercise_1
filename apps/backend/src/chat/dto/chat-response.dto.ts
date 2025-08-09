@@ -51,6 +51,9 @@ export class ChatResponseDto {
   @ApiProperty({ type: ChartData, description: 'Visualization data', required: false })
   chartData?: ChartData;
 
+  @ApiProperty({ description: 'Whether response supports streaming', required: false })
+  streamable?: boolean;
+
   @ApiProperty({ description: 'Additional metadata', required: false })
   metadata?: Record<string, any>;
 }

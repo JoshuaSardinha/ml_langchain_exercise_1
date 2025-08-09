@@ -54,7 +54,14 @@ export class MLService {
 
   async sendToMLService(request: MLRequest): Promise<MLResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/v1/chat', request);
+      // ML service expects query parameters, not body data
+      const params = {
+        message: request.message,
+        session_id: request.sessionId,
+        user_id: request.context?.userId,
+      };
+      
+      const response = await this.axiosInstance.post('/api/v1/chat', null, { params });
       return response.data;
     } catch (error) {
       this.logger.error(`Error communicating with ML service: ${error.message}`, error.stack);
@@ -93,7 +100,14 @@ export class MLService {
 
   async searchDocuments(request: MLDocumentSearchRequest): Promise<MLDocumentSearchResponse> {
     try {
-      const response = await this.axiosInstance.post('/api/v1/search-docs', request);
+      // ML service expects query parameters for search-docs
+      const params = {
+        query: request.query,
+        use_llm: true,
+        max_results: request.limit || 5,
+      };
+      
+      const response = await this.axiosInstance.post('/api/v1/search-docs', null, { params });
       return response.data;
     } catch (error) {
       this.logger.error(`Error searching documents: ${error.message}`, error.stack);
