@@ -39,8 +39,7 @@ def get_document_service() -> LangChainDocumentService:
         try:
             langchain_service = LangChainDocumentService(
                 docs_path=settings.DOCS_DIR,
-                vectordb_path=settings.VECTORDB_DIR,
-                embedding_model=settings.EMBEDDING_MODEL
+                vectordb_path=settings.VECTORDB_DIR
             )
         except Exception as e:
             logger.error(f"Failed to initialize document service: {e}")

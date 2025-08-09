@@ -25,7 +25,7 @@ export const CHAT_CONSTANTS = {
   },
   QUEUE: {
     MAX_QUEUE_SIZE: 100,
-    PROCESSING_TIMEOUT_MS: 30000,
+    PROCESSING_TIMEOUT_MS: 30000, // 30s timeout sufficient for both prediction and document search
     MAX_RETRIES: 3,
     RETRY_DELAY_MS: 2000,
   },

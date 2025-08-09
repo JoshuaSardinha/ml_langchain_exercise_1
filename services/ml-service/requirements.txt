@@ -1,7 +1,7 @@
 # Web Framework
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
-pydantic[email]==2.10.4
+pydantic==2.10.4
 pydantic-settings==2.7.1
 
 # ML and Data Science - Core packages
@@ -11,39 +11,28 @@ numpy==1.26.4
 joblib==1.4.2
 xgboost==2.1.3
 
-# Visualization and Analysis
+# Visualization and Analysis  
 shap==0.46.0
 matplotlib==3.9.2
 seaborn==0.13.2
-scipy==1.13.1
 
-# NLP and Document Processing - Core LangChain packages
-langchain==0.3.12
-langchain-core==0.3.28
-langchain-community==0.3.12
-langchain-huggingface==0.1.2
-chromadb==0.5.23
+# NLP and Document Processing - Proven working LangChain stack
+langchain==0.3.27
+langchain-core==0.3.74
+langchain-community==0.3.27
+langchain-openai==0.3.29
+langchain-huggingface==0.3.1
+langchain-chroma==0.2.5
+chromadb==1.0.16
 sentence-transformers==3.3.1
-tiktoken==0.8.0
-markdown==3.7
 
-# Optional LLM Providers (install only if API keys available)
-openai>=1.40.0
-langchain-openai>=0.2.0
-langchain-google-genai>=2.0.0
-langchain-anthropic>=0.3.0
+# OpenAI
+openai==1.99.5
 
-# Document Processing
-unstructured[md]==0.16.11
-huggingface_hub==0.27.0
-
-# HTTP Client
-httpx==0.28.1
+# Document Processing - Basic
+python-multipart==0.0.17
+python-dotenv==1.0.1
+unstructured==0.16.11
 
 # Development and Testing
 pytest==8.3.4
-pytest-asyncio==0.24.0
-
-# Utilities
-python-multipart==0.0.17
-python-dotenv==1.0.1
