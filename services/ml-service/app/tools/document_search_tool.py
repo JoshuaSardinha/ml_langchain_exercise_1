@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
-
 class DocumentSearchInput(BaseModel):
     """Input schema for DocumentSearchTool"""
     query: str = Field(description="Medical question or topic to search for in documents")
@@ -57,8 +56,7 @@ class DocumentSearchTool(BaseTool):
                 result = self.document_service.search_documents(
                     query=query,
                     n_results=max_results,
-                    use_llm=use_llm,
-                    include_sources=True
+                    use_llm=use_llm
                 )
             else:
                 result = self.document_service.search_documents(
@@ -88,7 +86,8 @@ class DocumentSearchTool(BaseTool):
             if "sources" in result and result["sources"]:
                 response += "Sources:\n"
                 for i, source in enumerate(result["sources"][:3], 1):  # Limit to top 3 sources
-                    response += f"{i}. {source['citation']}\n"
+                    source_info = source.get('metadata', {}).get('source', 'Unknown')
+                    response += f"{i}. Document: {source_info}\n"
                     if len(source['content']) > 200:
                         response += f"   Preview: {source['content'][:200]}...\n\n"
                     else:
@@ -100,7 +99,8 @@ class DocumentSearchTool(BaseTool):
             response = f"Found {result['total_results']} relevant documents:\n\n"
             
             for i, doc in enumerate(result["results"][:3], 1):  # Limit to top 3
-                response += f"{i}. {doc['citation']}\n"
+                source_info = doc.get('metadata', {}).get('source', 'Unknown')
+                response += f"{i}. Document: {source_info}\n"
                 
                 content = doc.get('content', '')
                 if len(content) > 300:

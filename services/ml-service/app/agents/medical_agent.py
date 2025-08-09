@@ -146,12 +146,15 @@ class MedicalAgent:
 
 ## Tool Usage Guidelines:
 
-### Data Queries
-Use data_query for questions about patient statistics, demographics, and dataset exploration.
-Examples: "How many smokers?", "Average BMI of COPD patients?", "Males over 40 readmitted?"
+### Data Queries (use data_query tool)
+For questions about patient statistics, demographics, and dataset exploration:
+- "How many smokers are in the dataset?"
+- "How many males older than 40 are readmitted?"
+- "How many patients were taking more than 5 medications?"
+- "Compare lab results across readmitted vs non-readmitted patients"
 
-### Predictions
-Use prediction tool for health outcome predictions. Extract specific parameter values from natural language queries.
+### Predictions (use prediction tool)
+For health outcome predictions. Extract specific parameter values from natural language queries.
 
 **Required Parameters**: target, age, sex, bmi, medication_count
 **Optional Parameters**: exercise_frequency, diet_quality, smoker, days_hospitalized, readmitted, urban_rural
@@ -162,24 +165,35 @@ Use prediction tool for health outcome predictions. Extract specific parameter v
 - sex: "Male" or "Female"
 - bmi: numeric value (e.g., 27.5)
 - medication_count: numeric from "takes X medications"
-- exercise_frequency: "None", "Rarely", "Weekly", "Daily" (map "doesn't exercise" → "None")
+- exercise_frequency: "None", "Rarely", "Weekly", "Daily" (map "doesn't exercise" → "None", "athlete" → "Daily")
 - diet_quality: "Poor", "Average", "Good", "Excellent"
 - smoker: true/false boolean (default false if not mentioned)
-- days_hospitalized: numeric (default 0)
-- readmitted: true/false boolean (default false)  
-- urban_rural: "Urban" or "Rural" (default "Urban")
+- days_hospitalized: numeric (default 0, extract from "in hospital for X days")
+- readmitted: true/false boolean (default false, extract from "readmitted")  
+- urban_rural: "Urban" or "Rural" (default "Urban", extract from "center of city" → "Urban")
 
-### Document Search
-Use document_search for medical knowledge and clinical information.
-Examples: "Symptoms of seasonal allergies?", "Treatment protocols?", "Drug interactions?"
+**Example Predictions**:
+- "What is the predicted value for chronic_obstructive_pulmonary_disease for 55 year old male with bmi of 27.5, which takes 3 medications, doesn't exercise, and have poor diet quality?"
+- "What is the predicted value for alanine_aminotransferases for woman at 44 years, that has been in a hospital for 5 days, readmitted, athlete that lives in the center of the city?"
 
-### Visualizations  
-Use visualization to create charts that support your analysis.
-Examples: Bar charts for categories, histograms for distributions, scatter plots for relationships.
+### Document Search (use document_search tool)
+For medical knowledge, clinical information, and patient-specific medical details from documents:
+- "What medications was the heart attack patient taking?"
+- "What are the symptoms of seasonal allergies?"
+- "Summarize the treatment plan for diabetic patients over 60."
+- Questions about treatments, medications, symptoms, diagnoses, or clinical protocols
+
+**IMPORTANT**: Always use document_search for medication-related questions, treatment plans, and clinical information from medical records.
+
+### Visualizations (use visualization tool)
+Create charts that support your analysis:
+- Bar charts for categories, histograms for distributions, scatter plots for relationships
+- Any request for charts, graphs, or data visualization
 
 ## Instructions:
 - Always think step by step and extract specific parameter values before calling tools
 - Use multiple tools when needed for comprehensive answers
+- For medication/treatment questions, ALWAYS use document_search first
 - Provide context and interpretation for predictions and statistics
 - Be accurate, thorough, and clear in your responses
 

@@ -75,8 +75,7 @@ class ChatService:
         try:
             service = LangChainDocumentService(
                 docs_path=settings.DOCS_DIR,
-                vectordb_path=settings.VECTORDB_DIR,
-                embedding_model=settings.EMBEDDING_MODEL
+                vectordb_path=settings.VECTORDB_DIR
             )
             logger.info(f"LangChain document service initialized with configured paths: docs={settings.DOCS_DIR}, vectordb={settings.VECTORDB_DIR}")
             return service

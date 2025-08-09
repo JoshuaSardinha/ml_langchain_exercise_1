@@ -135,10 +135,9 @@ Answer:""")
                     "total_documents": existing_count
                 }
         except:
-            pass  # Continue with processing if count check fails
+            pass
         
         try:
-            # Load documents
             loader = DirectoryLoader(
                 str(self.docs_path),
                 glob="**/*.md",
@@ -151,25 +150,21 @@ Answer:""")
             if not documents:
                 return {"error": "No documents found to process"}
             
-            # Split documents
             split_documents = self.text_splitter.split_documents(documents)
             logger.info(f"Split into {len(split_documents)} chunks")
             
-            # Clear existing documents if force reprocess
             if force_reprocess:
                 try:
                     self.vector_store._collection.delete(where={})
                 except:
                     pass
             
-            # Add documents to vector store in batches to avoid size limits
             batch_size = 100
             for i in range(0, len(split_documents), batch_size):
                 batch = split_documents[i:i+batch_size]
                 self.vector_store.add_documents(batch)
                 logger.info(f"Added batch {i//batch_size + 1}/{(len(split_documents) + batch_size - 1)//batch_size}")
             
-            # Recreate RAG chain to use updated vector store
             self.rag_chain = self._create_rag_chain()
             
             return {
@@ -192,10 +187,8 @@ Answer:""")
         
         try:
             if use_llm and self.rag_chain:
-                # Use RAG chain for enhanced results
                 answer = self.rag_chain.invoke(query)
                 
-                # Get source documents separately for transparency
                 retriever = self.vector_store.as_retriever(search_kwargs={"k": n_results})
                 source_docs = retriever.invoke(query)
                 
@@ -211,7 +204,6 @@ Answer:""")
                     ]
                 }
             else:
-                # Simple similarity search
                 docs = self.vector_store.similarity_search(query, k=n_results)
                 
                 return {
