@@ -219,7 +219,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       )}
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-hidden">
         {/* Messages */}
         <MessageList
           messages={state.messages}
