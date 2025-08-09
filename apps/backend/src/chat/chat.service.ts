@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChatMessageDto, ChatResponseDto, MessageType, StreamProgressDto } from './dto';
+import { ChatMessageDto, ChatResponseDto, MessageType, StreamProgressDto, StreamStage } from './dto';
 import { SessionService, SessionMessage } from './session.service';
 import { MLService } from '../ml/ml.service';
 import { CHAT_CONSTANTS } from './chat.constants';
@@ -117,7 +117,7 @@ export class ChatService {
 
       if (options.onProgress) {
         options.onProgress({
-          stage: 'analyzing',
+          stage: StreamStage.ANALYZING,
           progress: 25,
           message: 'Analyzing your message...',
         });
@@ -136,7 +136,7 @@ export class ChatService {
 
       if (options.onProgress) {
         options.onProgress({
-          stage: 'processing',
+          stage: StreamStage.PROCESSING,
           progress: 75,
           message: 'Processing ML response...',
         });
@@ -172,7 +172,7 @@ export class ChatService {
 
       if (options.onProgress) {
         options.onProgress({
-          stage: 'complete',
+          stage: StreamStage.COMPLETE,
           progress: 100,
           message: 'Response ready!',
         });

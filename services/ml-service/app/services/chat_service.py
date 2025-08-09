@@ -75,8 +75,7 @@ class ChatService:
         try:
             service = LangChainDocumentService(
                 docs_path=settings.DOCS_DIR,
-                vectordb_path=settings.VECTORDB_DIR,
-                embedding_model=settings.EMBEDDING_MODEL
+                vectordb_path=settings.VECTORDB_DIR
             )
             logger.info(f"LangChain document service initialized with configured paths: docs={settings.DOCS_DIR}, vectordb={settings.VECTORDB_DIR}")
             return service
@@ -174,14 +173,16 @@ class ChatService:
         """Build chat response dictionary"""
         chat_response = {
             "session_id": session_id,
-            "message": message,
-            "response": response.get("answer", ""),
+            "user_message": message,
+            "message": response.get("answer", ""),
             "tools_used": response.get("tools_used", []),
             "timestamp": datetime.now().isoformat(),
             "success": response.get("success", False),
-            "session_info": {
-                "message_count": session["message_count"],
-                "created_at": session["created_at"].isoformat()
+            "metadata": {
+                "session_info": {
+                    "message_count": session["message_count"],
+                    "created_at": session["created_at"].isoformat()
+                }
             }
         }
         
@@ -194,8 +195,8 @@ class ChatService:
         """Build error response dictionary"""
         return {
             "session_id": session_id,
-            "message": message,
-            "response": f"I encountered an error while processing your request: {error}",
+            "user_message": message,
+            "message": f"I encountered an error while processing your request: {error}",
             "error": error,
             "success": False,
             "timestamp": datetime.now().isoformat()
@@ -237,8 +238,8 @@ Please check the system configuration and try again."""
         
         return {
             "session_id": session_id,
-            "message": message,
-            "response": response,
+            "user_message": message,
+            "message": response,
             "success": False,
             "error": "Agent not available",
             "timestamp": datetime.now().isoformat()
@@ -270,8 +271,8 @@ Please check the system configuration and try again."""
         
         return {
             "session_id": session_id,
-            "message": command,
-            "response": response,
+            "user_message": command,
+            "message": response,
             "success": True,
             "timestamp": datetime.now().isoformat(),
             "is_command": True
