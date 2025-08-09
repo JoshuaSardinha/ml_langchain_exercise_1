@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Request
 from typing import Optional
 import logging
 
@@ -58,27 +58,38 @@ def get_chat_service() -> ChatService:
     return chat_service
 
 @router.get("/health", response_model=HealthResponse)
-async def health_check():
-    """Health check endpoint"""
+async def health_check(request: Request):
+    """Health check endpoint with initialization status"""
     vectordb_ready = False
     ml_models_loaded = False
+    initialization_status = None
     
-    try:
-        doc_service = get_document_service()
-        vectordb_ready = doc_service.vector_store is not None
-    except Exception as e:
-        logger.warning(f"Document service health check warning: {e}")
+    # Get initialization result from app state
+    if hasattr(request.app.state, 'initialization_result'):
+        initialization_status = request.app.state.initialization_result
+        # Use initialization status if available
+        if initialization_status:
+            ml_models_loaded = initialization_status.get("models_trained", False)
+            vectordb_ready = initialization_status.get("documents_processed", False)
     
-    try:
-        chat_svc = get_chat_service()
-        if chat_svc.ml_service:
-            model_status = chat_svc.ml_service.are_models_loaded()
-            ml_models_loaded = model_status.get("any_model_loaded", False)
-    except Exception as e:
-        logger.warning(f"ML service health check warning: {e}")
+    # Fallback to runtime checks if initialization status not available
+    if initialization_status is None:
+        try:
+            doc_service = get_document_service()
+            vectordb_ready = doc_service.vector_store is not None
+        except Exception as e:
+            logger.warning(f"Document service health check warning: {e}")
+        
+        try:
+            chat_svc = get_chat_service()
+            if chat_svc.ml_service:
+                model_status = chat_svc.ml_service.are_models_loaded()
+                ml_models_loaded = model_status.get("any_model_loaded", False)
+        except Exception as e:
+            logger.warning(f"ML service health check warning: {e}")
     
     return HealthResponse(
-        status="healthy",
+        status="healthy" if (ml_models_loaded and vectordb_ready) else "degraded",
         service="ml-service", 
         version="1.0.0",
         models_loaded=ml_models_loaded,
@@ -86,14 +97,15 @@ async def health_check():
     )
 
 @router.get("/status")
-async def service_status():
+async def service_status(request: Request):
     """Detailed service status"""
-    return {
+    base_status = {
         "service": "Data Doctor ML Service",
         "status": "running",
         "endpoints": [
             "/api/v1/health",
-            "/api/v1/status",
+            "/api/v1/status", 
+            "/api/v1/initialization",
             "/api/v1/chat",
             "/api/v1/predict",
             "/api/v1/query-data",
@@ -103,6 +115,23 @@ async def service_status():
         ],
         "implementation": "LangChain-powered"
     }
+    
+    # Add initialization status if available
+    if hasattr(request.app.state, 'initialization_result'):
+        base_status["initialization"] = request.app.state.initialization_result
+    
+    return base_status
+
+@router.get("/initialization")
+async def initialization_status(request: Request):
+    """Get detailed initialization status"""
+    if hasattr(request.app.state, 'initialization_result'):
+        return request.app.state.initialization_result
+    else:
+        return {
+            "error": "Initialization status not available", 
+            "message": "This endpoint requires the startup service to have run"
+        }
 
 @router.post("/search-docs")
 async def search_documents(query: str, use_llm: bool = True, max_results: int = 5):

@@ -6,6 +6,7 @@ import logging
 
 from .config import settings
 from .api.endpoints import router
+from .services.startup_service import StartupService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,6 +14,16 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Data Doctor ML Service...")
+    
+    # Initialize system: train models and process documents if needed
+    startup_service = StartupService()
+    initialization_result = startup_service.initialize_system()
+    
+    # Store initialization result for potential use by endpoints
+    app.state.initialization_result = initialization_result
+    
+    if not initialization_result["initialization_successful"]:
+        logger.warning("System initialization completed with errors - some API endpoints may not work properly")
     
     yield
     logger.info("Shutting down Data Doctor ML Service...")
