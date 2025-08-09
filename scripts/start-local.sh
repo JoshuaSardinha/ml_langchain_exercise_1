@@ -175,19 +175,48 @@ setup_python_environment() {
     if [ ! -f "venv/.requirements_installed" ]; then
         print_loading "Installing Python dependencies... (this may take a few minutes)"
         
-        # Upgrade pip first
-        pip install --upgrade pip
+        # Upgrade pip, setuptools, and wheel first to avoid installation issues
+        pip install --upgrade pip setuptools wheel
         
-        # Install requirements with timeout
-        timeout $DEPENDENCY_INSTALL_TIMEOUT pip install -r requirements.txt
-        if [ $? -ne 0 ]; then
-            print_error "Failed to install Python dependencies"
-            return 1
+        # Try to install requirements with retry logic (up to 3 attempts)
+        local max_attempts=3
+        local attempt=1
+        local install_success=0
+        
+        while [ $attempt -le $max_attempts ] && [ $install_success -eq 0 ]; do
+            print_info "Installation attempt $attempt of $max_attempts..."
+            
+            # Install requirements with timeout and no-compile flag to avoid syntax errors in legacy packages
+            timeout $DEPENDENCY_INSTALL_TIMEOUT pip install --no-compile -r requirements.txt
+            
+            if [ $? -eq 0 ]; then
+                install_success=1
+                print_success "Python dependencies installed successfully on attempt $attempt"
+            else
+                if [ $attempt -lt $max_attempts ]; then
+                    print_warning "Installation attempt $attempt failed, retrying..."
+                    
+                    # Clear pip cache to avoid corrupted downloads
+                    print_info "Clearing pip cache..."
+                    pip cache purge 2>/dev/null || true
+                    
+                    # Wait before retry with exponential backoff
+                    local wait_time=$((attempt * 5))
+                    print_info "Waiting ${wait_time} seconds before retry..."
+                    sleep $wait_time
+                else
+                    print_error "Failed to install Python dependencies after $max_attempts attempts"
+                    return 1
+                fi
+            fi
+            
+            attempt=$((attempt + 1))
+        done
+        
+        # Mark requirements as installed only if successful
+        if [ $install_success -eq 1 ]; then
+            touch venv/.requirements_installed
         fi
-        
-        # Mark requirements as installed
-        touch venv/.requirements_installed
-        print_success "Python dependencies installed successfully"
     else
         print_success "Python dependencies already installed"
     fi

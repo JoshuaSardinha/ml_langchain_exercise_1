@@ -32,6 +32,7 @@ openai==1.99.5
 # Document Processing - Basic
 python-multipart==0.0.17
 python-dotenv==1.0.1
+olefile>=0.47
 unstructured==0.16.11
 
 # Development and Testing
