@@ -36,6 +36,9 @@ ML_SERVICE_PORT=8000
 BACKEND_PORT=3000
 FRONTEND_PORT=4200
 
+# Exit flag for proper script termination
+EXIT_REQUESTED=false
+
 # Timeout configurations (in seconds)
 SERVICE_START_TIMEOUT=60
 HEALTH_CHECK_TIMEOUT=30
@@ -43,6 +46,7 @@ DEPENDENCY_INSTALL_TIMEOUT=300
 
 # Cleanup function for graceful exit
 cleanup_on_exit() {
+    EXIT_REQUESTED=true
     print_info "Cleaning up background processes..."
     
     # Kill services using PID files
@@ -568,7 +572,7 @@ main() {
     echo ""
     
     # Keep script running to maintain trap
-    while true; do
+    while [ "$EXIT_REQUESTED" = false ]; do
         sleep 5
         
         # Check if all services are still running
@@ -589,6 +593,12 @@ main() {
             break
         fi
     done
+    
+    # Exit gracefully
+    if [ "$EXIT_REQUESTED" = true ]; then
+        print_info "Exiting gracefully..."
+    fi
+    exit 0
 }
 
 # Run main function
