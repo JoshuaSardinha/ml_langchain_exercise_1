@@ -391,7 +391,7 @@ start_backend_service() {
     
     # Additional health check if endpoint is available
     sleep 2
-    if curl -f -s "http://localhost:$BACKEND_PORT/health" > /dev/null 2>&1; then
+    if curl -f -s "http://localhost:$BACKEND_PORT/api/v1/health" > /dev/null 2>&1; then
         print_success "Backend Service health check passed"
     else
         print_warning "Backend Service is running but health endpoint not responding (this may be normal)"

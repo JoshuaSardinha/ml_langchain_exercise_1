@@ -42,22 +42,28 @@ class StartupService:
     def _are_documents_processed(self) -> bool:
         """Check if documents are already processed in vector database"""
         try:
-            # Check if vector database directory exists and has content
             if not self.vectordb_path.exists():
                 logger.info("Vector database directory not found")
                 return False
             
-            # Try to initialize the service and check document count
             doc_service = LangChainDocumentService()
             stats = doc_service.get_stats()
             
             if "error" in stats:
-                logger.info("Vector database not accessible or empty")
+                logger.info(f"Vector database not accessible or has error: {stats.get('error', 'unknown error')}")
                 return False
             
             doc_count = stats.get("total_chunks", 0)
+            
+            llm_configured = stats.get("llm_configured", False)
+            rag_available = stats.get("rag_chain_available", False)
+            
             if doc_count > 0:
                 logger.info(f"Found {doc_count} document chunks in vector database")
+                if not llm_configured:
+                    logger.warning("Documents processed but LLM not configured")
+                if not rag_available:
+                    logger.warning("Documents processed but RAG chain not available")
                 return True
             else:
                 logger.info("Vector database exists but contains no documents")
@@ -122,7 +128,16 @@ class StartupService:
             logger.info("="*60)
             
             doc_service = LangChainDocumentService()
-            result = doc_service.process_documents(force_reprocess=False)
+            
+            stats = doc_service.get_stats()
+            existing_chunks = stats.get("total_chunks", 0)
+            
+            force_reprocess = existing_chunks == 0 or "error" in stats
+            
+            if force_reprocess:
+                logger.info("No existing documents found or vector store not properly initialized, will process documents")
+            
+            result = doc_service.process_documents(force_reprocess=force_reprocess)
             
             if "error" in result:
                 logger.error(f"Document processing failed: {result['error']}")
