@@ -125,7 +125,9 @@ cd loka_ml_exercise
 pnpm install
 
 # Set up environment variables (optional but recommended)
-export OPENAI_API_KEY="your-key-here"  # For full document search functionality
+# Copy .env.example to .env and add your API key:
+cp .env.example .env
+# Then edit .env and set: OPENAI_API_KEY="your-key-here"  # For full document search functionality
 
 # STEP 1: Process documents (required on first run)
 ./scripts/setup-documents.sh
@@ -137,6 +139,7 @@ export OPENAI_API_KEY="your-key-here"  # For full document search functionality
 **Two-Step Setup Process:**
 
 **Step 1 - Document Processing** (`setup-documents.sh`):
+
 - Sets up Python virtual environment
 - Starts ML service temporarily
 - Processes and indexes 1000+ medical documents into vector database
@@ -145,6 +148,7 @@ export OPENAI_API_KEY="your-key-here"  # For full document search functionality
 - Automatically stops the service when complete
 
 **Step 2 - System Startup** (`start-local.sh`):
+
 - Trains and validates ML models (with grid search optimization)
 - Starts all services (Frontend, Backend, ML Service)
 - Provides integrated health monitoring
