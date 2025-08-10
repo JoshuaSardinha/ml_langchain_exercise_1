@@ -1,17 +1,76 @@
 # Data Doctor – Your AI Health Assistant
 
-Welcome to the **Data Doctor** implementation for the Loka ML Engineer challenge. This project demonstrates a comprehensive AI-powered health assistant that combines machine learning predictions with intelligent document retrieval to support clinical analysts in their decision-making process.
+## Demo
 
-## Project Overview
+Watch the Data Doctor in action:
 
-This proof-of-concept represents an advanced clinical decision support tool designed to augment the capabilities of healthcare professionals. The system functions as an intelligent assistant that can systematically analyze patient data and medical literature. The platform provides:
+https://github.com/user-attachments/assets/de7a092a-a108-4e8c-8025-3d9ad84e5784
 
-- **Predict health outcomes** like COPD classification and ALT levels using real patient features
-- **Search medical documents** intelligently and answer questions about treatments, medications, and clinical protocols
-- **Analyze patient data** with natural language queries like "How many smokers are readmitted?"
-- **Create visualizations** to help understand patterns in the data
+## Getting Started
 
-The system is architected as an interactive chat interface that enables clinicians to pose questions in natural language and receive intelligent, contextual responses supported by both machine learning predictions and comprehensive medical document analysis.
+### Prerequisites
+
+- **Node.js 18+** and **pnpm**
+- **Python 3.9+**
+
+### Quick Start: Local Development (Recommended)
+
+```bash
+# Clone and install
+git clone https://github.com/JoshuaSardinha/loka_ml_exercise.git
+cd loka_ml_exercise
+pnpm install
+
+# Set up environment variables (optional but recommended)
+# Copy .env.example to .env and add your API key:
+cp .env.example .env
+# Then edit .env and set: OPENAI_API_KEY="your-key-here"  # For full document search functionality
+
+# STEP 1: Process documents (required on first run)
+./scripts/setup-documents.sh
+
+# STEP 2: Start everything locally
+./scripts/start-local.sh
+```
+
+**Services will be available at:**
+
+- **Frontend**: http://localhost:4200
+- **Backend**: http://localhost:3000
+- **ML Service**: http://localhost:8000
+
+## Overview
+
+This project is my solution to the Loka ML Engineer challenge (completed within the 5-day timeframe). The Data Doctor is an AI-powered health assistant that combines machine learning predictions with intelligent document retrieval to support clinical decision-making.
+
+**What I Built:**
+
+- Trained XGBoost models for COPD classification (24.6% accuracy - indicating complex feature relationships) and ALT level prediction (99.9% R² score)
+- Implemented a LangChain RAG system processing 1000+ medical documents with semantic search
+- Created a ReAct agent that orchestrates ML predictions, data queries, and document searches through natural language
+- Delivered a full-stack application with React frontend, NestJS backend, and FastAPI ML service
+
+**Key Achievements:**
+
+- Successfully integrated multiple AI technologies into a cohesive clinical assistant
+- Demonstrated end-to-end ML pipeline from data preprocessing to production deployment
+- Built a modular, extensible architecture using Nx monorepo structure
+- Implemented robust error handling and health monitoring across all services
+
+**Current Limitations & Next Steps:**
+
+While the prototype demonstrates the viability of the Data Doctor concept, there are known areas for improvement:
+
+- **COPD Classification Challenge**: The 24.6% accuracy suggests the current features may not be sufficient for predicting COPD severity. With more time, I would explore deep learning models, additional feature engineering, and potentially request more clinical biomarkers
+- **RAG Term Mapping Issues**: The system struggles with medical synonyms (e.g., doesn't find medications for "heart attack" when stored as "myocardial infarction"). This requires implementing a medical ontology mapping layer
+- **Missing Visualizations**: The current text-only responses limit data exploration. Chart generation would significantly enhance the user experience
+
+Given additional time beyond the 5-day limit, my immediate priorities would be:
+
+1. Implement interactive data visualizations using Chart.js or D3, maybe AWS Quicksight
+2. Experiment with ensemble methods and neural networks for COPD classification
+3. Enhance the RAG pipeline with medical term normalization and synonym expansion, also playing with different chunking/embedding values
+4. Refine prompting strategies for more accurate agent responses
 
 ## Technical Architecture and Design Decisions
 
@@ -90,7 +149,7 @@ The system implements a comprehensive preprocessing pipeline designed for medica
 - Interaction terms (smoker_high_bmi, elderly_smoker)
 - Standardization of numerical features using StandardScaler
 
-### 🏗️ Nx Monorepo: Structured Architecture
+### Nx Monorepo: Structured Architecture
 
 The project is organized as an Nx monorepo to provide several architectural advantages:
 
@@ -99,90 +158,14 @@ The project is organized as an Nx monorepo to provide several architectural adva
 - **Standardized tooling**: Unified approach to linting, testing, and build processes
 - **Scalable structure**: Supports addition of new applications and libraries without architectural restructuring
 
-### 🐳 Docker: Production-Ready Deployment
+### Docker: Deployment (WIP)
 
-The complete application stack is containerized using Docker with:
+The application stack is being prepared for using Docker with:
 
 - **Comprehensive health checks** for all services
 - **Persistent volume management** for vector database storage
 - **Proper service dependency configuration** and orchestration
 - **Centralized environment variable** management and configuration
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js 18+** and **pnpm**
-- **Python 3.9+**
-- **Docker & Docker Compose** (for containerized deployment)
-
-### Option 1: Local Development (Recommended)
-
-```bash
-# Clone and install
-git clone <this-repo>
-cd loka_ml_exercise
-pnpm install
-
-# Set up environment variables (optional but recommended)
-# Copy .env.example to .env and add your API key:
-cp .env.example .env
-# Then edit .env and set: OPENAI_API_KEY="your-key-here"  # For full document search functionality
-
-# STEP 1: Process documents (required on first run)
-./scripts/setup-documents.sh
-
-# STEP 2: Start everything locally
-./scripts/start-local.sh
-```
-
-**Two-Step Setup Process:**
-
-**Step 1 - Document Processing** (`setup-documents.sh`):
-
-- Sets up Python virtual environment
-- Starts ML service temporarily
-- Processes and indexes 1000+ medical documents into vector database
-- Creates embeddings for semantic search
-- Verifies document retrieval functionality
-- Automatically stops the service when complete
-
-**Step 2 - System Startup** (`start-local.sh`):
-
-- Trains and validates ML models (with grid search optimization)
-- Starts all services (Frontend, Backend, ML Service)
-- Provides integrated health monitoring
-
-**Services will be available at:**
-
-- 🌐 **Frontend**: http://localhost:4200
-- 🔧 **Backend**: http://localhost:3000
-- 🤖 **ML Service**: http://localhost:8000
-
-### Option 2: Docker Deployment
-
-```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### Health Checks
-
-```bash
-# Check all services
-./scripts/health-check.sh
-
-# Individual health endpoints
-curl http://localhost:8000/api/v1/health    # ML Service
-curl http://localhost:3000/health           # Backend
-curl http://localhost:4200                  # Frontend
-```
 
 ## System Capabilities and Examples
 
@@ -237,19 +220,12 @@ _Note: Feature importance values are relatively uniform (0.03-0.04 range), indic
 
 _Strong BMI-ALT correlation suggests metabolic syndrome patterns in the dataset._
 
-### Technical Implementation Highlights
-
-- **Sophisticated Preprocessing Pipeline**: Multi-stage data transformation with domain-specific feature engineering
-- **Advanced Document Processing**: Medical documents parsed into semantic sections with intelligent chunking
-- **Robust System Architecture**: Reliable service orchestration with comprehensive health monitoring
-- **Feature Engineering Excellence**: Created 35+ engineered features including risk scores, interactions, and categorical transformations
-
 ## Architecture Deep Dive
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   React Frontend│    │   NestJS Backend│    │  FastAPI ML     │
-│   (Port 4200)  │────│   (Port 3000)   │────│  Service        │
+│   (Port 4200)   │────│   (Port 3000)   │────│  Service        │
 │                 │    │                 │    │  (Port 8000)    │
 │   • Chat UI     │    │   • WebSockets  │    │                 │
 │   • Visualizations   │   • Session Mgmt│    │  • XGBoost      │
@@ -270,26 +246,19 @@ _Strong BMI-ALT correlation suggests metabolic syndrome patterns in the dataset.
 
 ## Future Development Roadmap
 
-### Short Term (1-2 weeks)
+### Immediate Priority (Next Week)
 
-- **Enhanced error handling** with intelligent retry logic and user-friendly messaging
-- **Caching infrastructure** for optimizing frequent predictions and document searches
-- **Model versioning system** with A/B testing capabilities
-- **Advanced evaluation metrics** tailored for medical use cases
+- **Implement data visualizations** for better pattern recognition and insights presentation
+- **Attempt to improve COPD classification** by exploring advanced models (deep learning, ensemble methods) and feature engineering
+- **Enhance RAG accuracy** by fixing entity recognition issues (e.g., "heart attack" vs "myocardial infarction" mapping)
+- **Optimize prompting strategies** for more accurate and contextual responses
 
-### Medium Term (1 month)
+### Infrastructure & Deployment (2-3 Weeks)
 
-- **Real-time model updating** capabilities for continuous learning from new patient data
-- **Explainable AI dashboard** providing detailed feature contribution analysis for each prediction
-- **FHIR standard integration** for compatibility with real clinical data systems
-- **Multi-modal input support** including lab images, EKGs, and other diagnostic data
-
-### Long Term (3+ months)
-
-- **Federated learning implementation** enabling multi-hospital collaboration while preserving privacy
-- **Clinical decision support system** with evidence-based treatment recommendations
-- **EHR system integration** with major platforms like Epic or Cerner
-- **Regulatory compliance framework** addressing HIPAA requirements and FDA guidance for ML in healthcare
+- **AWS SageMaker Model Registry** for versioned model storage and deployment
+- **Amazon OpenSearch** evaluation for scalable vector database storage (cost-benefit analysis required)
+- **ECS Fargate deployment** for containerized compute with auto-scaling
+- **Basic authentication layer** and security hardening for production deployment
 
 ## Project Structure
 
