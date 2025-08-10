@@ -36,6 +36,9 @@ ML_SERVICE_PORT=8000
 BACKEND_PORT=3000
 FRONTEND_PORT=4200
 
+# Exit flag for proper script termination
+EXIT_REQUESTED=false
+
 # Timeout configurations (in seconds)
 SERVICE_START_TIMEOUT=60
 HEALTH_CHECK_TIMEOUT=30
@@ -43,6 +46,7 @@ DEPENDENCY_INSTALL_TIMEOUT=300
 
 # Cleanup function for graceful exit
 cleanup_on_exit() {
+    EXIT_REQUESTED=true
     print_info "Cleaning up background processes..."
     
     # Kill services using PID files
@@ -175,19 +179,48 @@ setup_python_environment() {
     if [ ! -f "venv/.requirements_installed" ]; then
         print_loading "Installing Python dependencies... (this may take a few minutes)"
         
-        # Upgrade pip first
-        pip install --upgrade pip
+        # Upgrade pip, setuptools, and wheel first to avoid installation issues
+        pip install --upgrade pip setuptools wheel
         
-        # Install requirements with timeout
-        timeout $DEPENDENCY_INSTALL_TIMEOUT pip install -r requirements.txt
-        if [ $? -ne 0 ]; then
-            print_error "Failed to install Python dependencies"
-            return 1
+        # Try to install requirements with retry logic (up to 3 attempts)
+        local max_attempts=3
+        local attempt=1
+        local install_success=0
+        
+        while [ $attempt -le $max_attempts ] && [ $install_success -eq 0 ]; do
+            print_info "Installation attempt $attempt of $max_attempts..."
+            
+            # Install requirements with timeout and no-compile flag to avoid syntax errors in legacy packages
+            timeout $DEPENDENCY_INSTALL_TIMEOUT pip install --no-compile -r requirements.txt
+            
+            if [ $? -eq 0 ]; then
+                install_success=1
+                print_success "Python dependencies installed successfully on attempt $attempt"
+            else
+                if [ $attempt -lt $max_attempts ]; then
+                    print_warning "Installation attempt $attempt failed, retrying..."
+                    
+                    # Clear pip cache to avoid corrupted downloads
+                    print_info "Clearing pip cache..."
+                    pip cache purge 2>/dev/null || true
+                    
+                    # Wait before retry with exponential backoff
+                    local wait_time=$((attempt * 5))
+                    print_info "Waiting ${wait_time} seconds before retry..."
+                    sleep $wait_time
+                else
+                    print_error "Failed to install Python dependencies after $max_attempts attempts"
+                    return 1
+                fi
+            fi
+            
+            attempt=$((attempt + 1))
+        done
+        
+        # Mark requirements as installed only if successful
+        if [ $install_success -eq 1 ]; then
+            touch venv/.requirements_installed
         fi
-        
-        # Mark requirements as installed
-        touch venv/.requirements_installed
-        print_success "Python dependencies installed successfully"
     else
         print_success "Python dependencies already installed"
     fi
@@ -362,7 +395,7 @@ start_backend_service() {
     
     # Additional health check if endpoint is available
     sleep 2
-    if curl -f -s "http://localhost:$BACKEND_PORT/health" > /dev/null 2>&1; then
+    if curl -f -s "http://localhost:$BACKEND_PORT/api/v1/health" > /dev/null 2>&1; then
         print_success "Backend Service health check passed"
     else
         print_warning "Backend Service is running but health endpoint not responding (this may be normal)"
@@ -539,7 +572,7 @@ main() {
     echo ""
     
     # Keep script running to maintain trap
-    while true; do
+    while [ "$EXIT_REQUESTED" = false ]; do
         sleep 5
         
         # Check if all services are still running
@@ -560,6 +593,12 @@ main() {
             break
         fi
     done
+    
+    # Exit gracefully
+    if [ "$EXIT_REQUESTED" = true ]; then
+        print_info "Exiting gracefully..."
+    fi
+    exit 0
 }
 
 # Run main function

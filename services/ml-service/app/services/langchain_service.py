@@ -277,16 +277,19 @@ Answer:""")
         if not self.vector_store:
             return {"error": "Vector store not initialized"}
         
-        # Check if documents already exis
+        existing_count = 0
         try:
             existing_count = self.vector_store._collection.count()
+            logger.info(f"Found {existing_count} existing documents in vector store")
+            
             if existing_count > 0 and not force_reprocess:
+                logger.info(f"Documents already processed ({existing_count} chunks), skipping processing")
                 return {
                     "status": "already_processed",
                     "total_documents": existing_count
                 }
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Error checking existing documents, will proceed with processing: {e}")
         
         try:
             loader = DirectoryLoader(
