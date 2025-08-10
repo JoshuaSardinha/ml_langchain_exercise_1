@@ -112,13 +112,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                   w-full px-4 py-3 border border-gray-300 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                   resize-none overflow-hidden
-                  placeholder-gray-500
-                  ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
+                  placeholder-gray-500 transition-all duration-200
+                  ${disabled ? 'bg-gray-50 cursor-not-allowed text-gray-600 border-gray-200' : 'bg-white hover:border-gray-400'}
                   ${error ? 'border-red-300 focus:ring-red-500' : ''}
+                  ${disabled ? 'animate-pulse' : ''}
                 `}
                 style={{ minHeight: '48px' }}
                 aria-label="Type your message"
                 aria-describedby={error ? 'message-error' : undefined}
+                aria-busy={disabled}
               />
               
               {/* Character count */}
@@ -131,29 +133,34 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               )}
             </div>
 
-            {/* Send button */}
+            {/* Enhanced Send button */}
             <button
               type="submit"
               disabled={disabled || !isMessageValid || charactersLeft < 0}
               className={`
                 flex items-center justify-center w-12 h-12 rounded-lg
-                transition-all duration-200
+                transition-all duration-300 ease-in-out transform
                 ${disabled || !isMessageValid || charactersLeft < 0
-                  ? 'bg-gray-200 cursor-not-allowed text-gray-400'
-                  : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white hover:shadow-lg'
+                  ? 'bg-gray-200 cursor-not-allowed text-gray-400 scale-95'
+                  : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white hover:shadow-lg hover:scale-105 active:scale-95'
                 }
+                ${disabled ? 'animate-pulse' : ''}
               `}
               aria-label="Send message"
-              title={disabled ? 'Processing...' : !isMessageValid ? 'Type a message' : 'Send message (Enter)'}
+              title={disabled ? 'AI is processing your message...' : !isMessageValid ? 'Type a message' : 'Send message (Enter)'}
             >
               {disabled ? (
-                <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full" />
+                <div className="relative">
+                  <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-blue-500 rounded-full" />
+                  <span className="sr-only">Sending message...</span>
+                </div>
               ) : (
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 transition-transform duration-200"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"

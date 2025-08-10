@@ -48,6 +48,8 @@ const chatReducer = (state: ChatState, action: ChatAction): ChatState => {
         ...state,
         isLoading: action.payload,
         error: action.payload ? null : state.error,
+        // Set typing to true when loading starts, to provide immediate feedback
+        isTyping: action.payload ? true : state.isTyping,
       };
 
     case 'SET_TYPING':
