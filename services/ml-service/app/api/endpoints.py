@@ -64,22 +64,18 @@ async def health_check(request: Request):
     ml_models_loaded = False
     initialization_status = None
     
-    # Get initialization result from app state
     if hasattr(request.app.state, 'initialization_result'):
         initialization_status = request.app.state.initialization_result
-        # Use initialization status if available
         if initialization_status:
             ml_models_loaded = initialization_status.get("models_trained", False)
-            vectordb_ready = initialization_status.get("documents_processed", False)
     
-    # Fallback to runtime checks if initialization status not available
+    try:
+        doc_service = get_document_service()
+        vectordb_ready = doc_service.vector_store is not None
+    except Exception as e:
+        logger.warning(f"Document service health check warning: {e}")
+    
     if initialization_status is None:
-        try:
-            doc_service = get_document_service()
-            vectordb_ready = doc_service.vector_store is not None
-        except Exception as e:
-            logger.warning(f"Document service health check warning: {e}")
-        
         try:
             chat_svc = get_chat_service()
             if chat_svc.ml_service:
