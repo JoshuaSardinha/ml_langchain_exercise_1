@@ -2,7 +2,7 @@
 
 ## 🎥 Demo
 
-Watch the Data Doctor in action: https://youtu.be/f20NMiFrtho
+Watch the Data Doctor in action: [![Data Doctor Demo]](https://youtu.be/f20NMiFrtho)
 
 ## 🚀 Getting Started
 
