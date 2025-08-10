@@ -23,7 +23,8 @@
       "executor": "@nx/docker:build",
       "options": {
         "dockerfile": "services/ml-service/Dockerfile",
-        "tag": "ghcr.io/joshuasardinha/dd-ml-service"
+        "tag": "ghcr.io/joshuasardinha/dd-ml-service",
+        "context": "."
       }
     }
   }

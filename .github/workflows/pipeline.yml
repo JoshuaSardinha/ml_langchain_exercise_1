@@ -9,6 +9,7 @@ env:
   REPO_OWNER: ${{ github.repository_owner }}
   IMAGE_BACK: ghcr.io/${{ github.repository_owner }}/dd-backend
   IMAGE_FRONT: ghcr.io/${{ github.repository_owner }}/dd-frontend
+  IMAGE_ML: ghcr.io/${{ github.repository_owner }}/dd-ml-service
   SHA: ${{ github.sha }}
 
 jobs:
@@ -22,6 +23,7 @@ jobs:
           echo "REPO_OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           echo "IMAGE_BACK=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-backend" >> $GITHUB_ENV
           echo "IMAGE_FRONT=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-frontend" >> $GITHUB_ENV
+          echo "IMAGE_ML=ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-ml-service" >> $GITHUB_ENV
 
       - uses: pnpm/action-setup@v3
         with: { version: 10 }
@@ -54,34 +56,67 @@ jobs:
             -t $IMAGE_FRONT:$SHA -t $IMAGE_FRONT:latest .
           docker push $IMAGE_FRONT --all-tags
 
-  deploy-backend:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Deploy backend via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST_BACKEND }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_PAT }}
-            docker pull ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-backend:latest
-            docker compose -f /opt/datadoctor/docker-compose.yml up -d --no-deps --pull=always
+      - name: Build ML service image
+        run: |
+          docker build -f services/ml-service/Dockerfile \
+            -t $IMAGE_ML:$SHA -t $IMAGE_ML:latest .
+          docker push $IMAGE_ML --all-tags
 
-  deploy-frontend:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Deploy frontend via SSH
+      - name: Deploy all services to single server via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.SSH_HOST_FRONTEND }}
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            # Set lowercase repo owner
+            REPO_OWNER_LC=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
+            
+            # Login to container registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_PAT }}
-            docker pull ghcr.io/$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')/dd-frontend:latest
-            docker compose -f /opt/datadoctor/docker-compose.yml up -d --no-deps --pull=always
+            
+            # Ensure deployment directory exists
+            mkdir -p /opt/datadoctor
+            
+            # Pull all latest images
+            echo "Pulling latest container images..."
+            docker pull ghcr.io/${REPO_OWNER_LC}/dd-ml-service:latest
+            docker pull ghcr.io/${REPO_OWNER_LC}/dd-backend:latest
+            docker pull ghcr.io/${REPO_OWNER_LC}/dd-frontend:latest
+            
+            # Navigate to deployment directory
+            cd /opt/datadoctor
+            
+            # Update docker-compose.yml with correct image names (if template exists)
+            if [ -f docker-compose.yml ]; then
+              sed -i "s/REPO_OWNER_LC/${REPO_OWNER_LC}/g" docker-compose.yml || true
+            fi
+            
+            # Stop existing containers
+            echo "Stopping existing containers..."
+            docker compose down || true
+            
+            # Start all services with dependency ordering
+            echo "Starting all services..."
+            docker compose up -d --pull=always
+            
+            # Wait for services to become healthy
+            echo "Waiting for services to start..."
+            sleep 45
+            
+            # Check service health and status
+            echo "Checking service status..."
+            docker compose ps
+            
+            # Verify individual service health
+            echo "Verifying service health..."
+            curl -f http://localhost:8000/api/v1/health && echo "✅ ML Service healthy" || echo "❌ ML Service not responding"
+            curl -f http://localhost:3000/health && echo "✅ Backend healthy" || echo "❌ Backend not responding"  
+            curl -f http://localhost:80/ && echo "✅ Frontend healthy" || echo "❌ Frontend not responding"
+            
+            echo "🎉 Deployment completed!"
