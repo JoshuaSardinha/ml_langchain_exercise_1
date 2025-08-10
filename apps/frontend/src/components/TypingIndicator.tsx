@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StreamProgressDto } from '../types/chat.types';
 
 interface TypingIndicatorProps {
@@ -12,7 +12,22 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
   progress,
   className = '',
 }) => {
-  if (!isVisible) {
+  const [showIndicator, setShowIndicator] = useState(false);
+
+  // Add a small delay before showing the indicator to prevent flashing
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        setShowIndicator(true);
+      }, 300); // 300ms delay
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowIndicator(false);
+    }
+  }, [isVisible]);
+
+  if (!showIndicator) {
     return null;
   }
 
@@ -42,44 +57,76 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
     }
   };
 
+  const getStageDescription = (stage: string) => {
+    switch (stage) {
+      case 'analyzing':
+        return 'Analyzing your request';
+      case 'processing':
+        return 'Processing data';
+      case 'complete':
+        return 'Finalizing response';
+      default:
+        return 'Thinking';
+    }
+  };
+
   return (
-    <div className={`flex items-start space-x-2 mb-4 ${className}`}>
-      {/* AI Avatar */}
-      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">
+    <div 
+      className={`flex items-start space-x-2 mb-4 animate-fadeIn ${className}`}
+      role="status"
+      aria-live="polite"
+      aria-label={progress ? `AI is ${getStageDescription(progress.stage).toLowerCase()}, ${progress.progress}% complete` : "AI is thinking"}
+    >
+      {/* AI Avatar with subtle pulse animation */}
+      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm animate-pulse">
         🤖
       </div>
 
-      {/* Typing bubble */}
-      <div className="bg-white border border-gray-200 rounded-lg rounded-bl-none shadow-sm px-4 py-3 max-w-sm">
+      {/* Typing bubble with enhanced styling */}
+      <div className="bg-white border border-gray-200 rounded-lg rounded-bl-none shadow-sm px-4 py-3 max-w-sm animate-slideInFromLeft">
         {progress ? (
-          <div className="space-y-2">
+          <div className="space-y-2" aria-describedby="progress-description">
             {/* Progress message with icon */}
             <div className="flex items-center space-x-2">
-              <span className="text-sm">{getStageIcon(progress.stage)}</span>
-              <span className="text-sm text-gray-700">{progress.message}</span>
+              <span className="text-sm animate-pulse" aria-hidden="true">
+                {getStageIcon(progress.stage)}
+              </span>
+              <span className="text-sm text-gray-700 font-medium">
+                {progress.message || getStageDescription(progress.stage)}
+              </span>
             </div>
 
-            {/* Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
+            {/* Enhanced progress bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
               <div 
-                className={`h-1.5 rounded-full transition-all duration-300 ${getProgressColor(progress.stage)}`}
-                style={{ width: `${progress.progress}%` }}
-              />
+                className={`h-2 rounded-full transition-all duration-500 ease-out ${getProgressColor(progress.stage)} relative`}
+                style={{ width: `${Math.max(5, progress.progress)}%` }}
+              >
+                {/* Animated shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white via-transparent opacity-30 animate-shimmer" />
+              </div>
             </div>
 
-            {/* Progress percentage */}
-            <div className="text-xs text-gray-500 text-right">
-              {progress.progress}%
+            {/* Progress percentage with better formatting */}
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">
+                {getStageDescription(progress.stage)}
+              </span>
+              <span className="text-xs text-gray-600 font-medium">
+                {progress.progress}%
+              </span>
             </div>
           </div>
         ) : (
-          <div className="flex items-center space-x-1">
-            {/* Simple typing animation */}
-            <span className="text-sm text-gray-600">Thinking</span>
-            <div className="flex space-x-1">
-              <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="flex items-center space-x-2">
+            {/* Enhanced thinking animation */}
+            <div className="flex items-center space-x-1">
+              <span className="text-sm text-gray-600 font-medium">AI is thinking</span>
+              <div className="flex space-x-1 ml-2">
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
             </div>
           </div>
         )}

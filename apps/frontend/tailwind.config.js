@@ -25,12 +25,27 @@ module.exports = {
         'chat': '800px'
       },
       animation: {
-        'typing': 'typing 1.5s ease-in-out infinite'
+        'typing': 'typing 1.5s ease-in-out infinite',
+        'fadeIn': 'fadeIn 0.3s ease-in-out',
+        'slideInFromLeft': 'slideInFromLeft 0.4s ease-out',
+        'shimmer': 'shimmer 2s linear infinite'
       },
       keyframes: {
         typing: {
           '0%, 60%': { opacity: '1' },
           '30%': { opacity: '0.5' }
+        },
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
+        slideInFromLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' }
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(200%)' }
         }
       }
     },

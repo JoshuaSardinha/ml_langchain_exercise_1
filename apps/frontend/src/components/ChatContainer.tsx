@@ -88,8 +88,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
 
     // Add user message to chat
     const userMessage = actions.addUserMessage(messageContent);
-    actions.setLoading(true);
+    
+    // Clear any previous errors and set loading state
     actions.setError(null);
+    actions.setLoading(true);
 
     try {
       // Send message via WebSocket
@@ -105,6 +107,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
       const errorMessage = parseErrorMessage(error);
       actions.addErrorMessage(`Failed to send message: ${errorMessage}`);
       actions.setLoading(false);
+      actions.setTyping(false);
       actions.setError(errorMessage);
     }
   }, [isConnected, sendMessage, state.sessionId, actions]);
@@ -236,7 +239,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
             !isConnected 
               ? "Connecting to server..." 
               : state.isLoading 
-                ? "Processing your message..."
+                ? state.currentProgress?.message || "AI is processing your message..."
                 : "Ask me about patient data, predictions, or medical information..."
           }
         />
