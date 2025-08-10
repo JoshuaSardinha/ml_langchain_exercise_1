@@ -1,10 +1,12 @@
 # Data Doctor – Your AI Health Assistant
 
-## 🎥 Demo
+## Demo
 
-Watch the Data Doctor in action: [![Data Doctor Demo]](https://youtu.be/f20NMiFrtho)
+Watch the Data Doctor in action:
 
-## 🚀 Getting Started
+https://github.com/user-attachments/assets/de7a092a-a108-4e8c-8025-3d9ad84e5784
+
+## Getting Started
 
 ### Prerequisites
 
@@ -33,11 +35,11 @@ cp .env.example .env
 
 **Services will be available at:**
 
-- 🌐 **Frontend**: http://localhost:4200
-- 🔧 **Backend**: http://localhost:3000
-- 🤖 **ML Service**: http://localhost:8000
+- **Frontend**: http://localhost:4200
+- **Backend**: http://localhost:3000
+- **ML Service**: http://localhost:8000
 
-## 📋 Overview
+## Overview
 
 This project is my solution to the Loka ML Engineer challenge (completed within the 5-day timeframe). The Data Doctor is an AI-powered health assistant that combines machine learning predictions with intelligent document retrieval to support clinical decision-making.
 
