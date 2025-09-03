@@ -15,7 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@loka/langchain-core": ["libs/langchain-core/src/index.ts"]
+      "@ml-exercise/langchain-core": ["libs/langchain-core/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

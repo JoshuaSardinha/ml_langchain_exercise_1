@@ -17,8 +17,8 @@ https://github.com/user-attachments/assets/de7a092a-a108-4e8c-8025-3d9ad84e5784
 
 ```bash
 # Clone and install
-git clone https://github.com/JoshuaSardinha/loka_ml_exercise.git
-cd loka_ml_exercise
+git clone https://github.com/JoshuaSardinha/ml_langchain_exercise_1.git
+cd ml_langchain_exercise_1
 pnpm install
 
 # Set up environment variables (optional but recommended)
@@ -41,7 +41,7 @@ cp .env.example .env
 
 ## Overview
 
-This project is my solution to the Loka ML Engineer challenge (completed within the 5-day timeframe). The Data Doctor is an AI-powered health assistant that combines machine learning predictions with intelligent document retrieval to support clinical decision-making.
+This project is an exercise (completed within a 5-day timeframe). The Data Doctor is an AI-powered health assistant that combines machine learning predictions with intelligent document retrieval to support clinical decision-making.
 
 **What I Built:**
 
@@ -263,7 +263,7 @@ _Strong BMI-ALT correlation suggests metabolic syndrome patterns in the dataset.
 ## Project Structure
 
 ```
-loka_ml_exercise/
+ml_langchain_exercise_1/
 ├── apps/
 │   ├── backend/          # NestJS API server
 │   ├── frontend/         # React chat interface
@@ -300,6 +300,6 @@ The implementation is ready for evaluation and testing through the chat interfac
 
 ---
 
-**Built for the Loka ML Engineer interview process**
+**A comprehensive exercise in ML and LangChain agent development**
 
 _Questions? Issues? The logs are your friend: `tail -f logs/_.log`\*

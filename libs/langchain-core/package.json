@@ -1,5 +1,5 @@
 {
-  "name": "@loka/langchain-core",
+  "name": "@ml-exercise/langchain-core",
   "version": "0.0.1",
   "private": true,
   "type": "commonjs",
